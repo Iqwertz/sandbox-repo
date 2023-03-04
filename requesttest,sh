@@ -1,0 +1,51 @@
+TOKEN=
+OWNER=iqwertz
+REPO=sandbox-repo
+BRANCH=test
+
+<<COMMENT
+TOKEN=<myToken> 
+OWNER=<myOwner>
+REPO=<myRepo>
+BRANCH=<myBranch>
+COMMENT
+
+#wait for user input
+read -p "test: login"
+
+#test login
+curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $TOKEN"\
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/user
+
+read -p "test: pull commit"
+
+#pull last commit
+latestCommit=$(curl -L \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $TOKEN"\
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/$OWNER/$REPO/commits?sha=$BRANCH)
+
+echo "Latest commit= "$latestCommit
+latestCommitSHA=$(echo $latestCommit | jq -r '.[0].sha')
+echo "Latest commit SHA= "$latestCommitSHA
+
+read -p "test: push commit"
+#push
+push=$(curl -L \
+  -X PUT \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer $TOKEN"\
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  https://api.github.com/repos/$OWNER/$REPO/contents/test.txt \
+  -d '{"message":"test","content":"SGVsbG8gV29ybGQh","sha":"'$latestCommitSHA'","branch":"'$BRANCH'"}')
+
+echo "Push= "$push
+pushSHA=$(echo $push | jq -r '.object.sha')
+echo "Push SHA= "$pushSHA
+
+
+#https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#create-or-update-file-contents
